@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { ClientesModule } from './clientes/clientes.module';
+import { CitasModule } from './citas/citas.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { HardwareModule } from './hardware/hardware.module';
@@ -25,6 +26,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
       ClientesModule, 
       AuthModule, 
       HardwareModule, 
+      CitasModule,
       TicketModule,
       SoftwareModule, 
       EquiposModule, 
