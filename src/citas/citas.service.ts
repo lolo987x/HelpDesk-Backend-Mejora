@@ -67,7 +67,9 @@ export class CitasService {
 
   // Citas de hoy
   async findHoy(user: any) {
-    const hoy = new Date().toISOString().split('T')[0];
+    const ahora = new Date();
+    const hoy = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
+    
     const qb = this.citaRepo.createQueryBuilder('cita')
       .leftJoinAndSelect('cita.cliente', 'cliente')
       .leftJoinAndSelect('cita.tecnico', 'tecnico')
