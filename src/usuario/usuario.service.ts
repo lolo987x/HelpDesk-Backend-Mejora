@@ -41,11 +41,11 @@ export class UsuarioService {
         const user = await this.validateUserExists(userId);
 
         //Validar contraseña actual
-        const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.contraseña);
+        const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
         if (!isPasswordValid) throw new UnauthorizedException('Contraseña actual incorrecta');
 
         //Si se proporciona nueva contraseña, encriptarla
-        if (dto.nuevaContraseña) user.contraseña = await bcrypt.hash(dto.nuevaContraseña, 10);
+        if (dto.nuevaPassword) user.password = await bcrypt.hash(dto.nuevaPassword, 10);
 
         //Actualizar campos opcionales
         if (dto.nombre) user.nombre = dto.nombre;
@@ -59,9 +59,9 @@ export class UsuarioService {
         await this.usuarioRepo.save(user);
 
         //Retornamos el usuario sin la contraseña por seguridad
-        const { contraseña, ...result } = user;
+        const { password, ...result } = user;
         //Si se actualizo la contraseña, indicarlo en el mensaje de respuesta
-        if (dto.nuevaContraseña) {
+        if (dto.nuevaPassword) {
             return {
                 message: 'Perfil y contraseña actualizados exitosamente',
                 resultado: result,
@@ -81,7 +81,7 @@ export class UsuarioService {
         const user = await this.usuarioRepo.findOne({ where: { id_usuario: userId }, relations: { rol: true } });
         if (!user) throw new NotFoundException('Usuario no encontrado');
         //Retornamos el usuario sin la contraseña por seguridad
-        const { contraseña, ...result } = user;
+        const { password, ...result } = user;
         return result;
     }
 
@@ -91,31 +91,20 @@ export class UsuarioService {
     async listUsers(userPayload: any, filters: GetUsersFilterDto): Promise<UserResponseDto[]> {
         //Construir la consulta base con los Joins necesarios
         const query = this.usuarioRepo.createQueryBuilder('user')
-            .leftJoinAndSelect('user.rol', 'rol')
-            .leftJoin('clientes', 'cliente', 'user.id_cliente = cliente.id_cliente')
-            .leftJoin('sucursales', 'sucursal', 'user.id_sucursal = sucursal.id_sucursal')
-            .select([
-                'user.id_usuario',
-                'user.nombre',
-                'user.apellido',
-                'user.correo',
-                'user.telefono',
-                'user.is_active',
-                'user.created_at',
-                'rol.id_rol',
-                'rol.nombre',
-                'cliente.nombre_principal',
-                'sucursal.nombre_sucursal'
-            ]);
-
-        //Aplicar restricciones automáticas por Rol (Método Privado 1)
-        this.applyRoleRestrictions(query, userPayload, filters);
-
-        //Aplicar filtros dinámicos enviados por la UI (Método Privado 2)
-        this.applyFilters(query, filters);
-
-        //Ejecutar consulta y formatear la salida (Método Privado 3)
-        return this.executeAndFormatUsers(query);
+            .leftJoinAndSelect('user.rol', 'rol');
+        //Filtrar según el rol de quien hace la petición
+        if (userPayload.role === 'CLIENTE_EMPRESA') {
+            //Solo ve a los usuarios de su propia empresa
+            query.where('user.id_cliente = :clienteId', { clienteId: userPayload.clienteId });
+        } else if (userPayload.role === 'CLIENTE_SUCURSAL') {
+            //Solo ve a los usuarios de su sucursal específica
+            query.where('user.id_sucursal = :sucursalId', { sucursalId: userPayload.sucursalId });
+        }
+        const users = await query.getMany();
+        return users.map((user) => {
+        const { password, ...result } = user;
+            return result;
+        });
     }
 
     //Metodo para registrar un nuevo empleado (Solo Cliente_Empresa)
@@ -156,7 +145,7 @@ export class UsuarioService {
         }
 
         //Encriptar contraseña
-        const hashedPassword = await bcrypt.hash(dto.contraseña, 10);
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
 
         // Construir el objeto con tipado explicito Partial<Usuario> para evitar
         const userData: Partial<Usuario> = {
@@ -164,7 +153,7 @@ export class UsuarioService {
             apellido: dto.apellido,
             correo: dto.correo,
             telefono: dto.telefono,
-            contraseña: hashedPassword,
+            password: hashedPassword,
             rol: rol,
             id_cliente: cliente?.id_cliente ,   
             id_sucursal: sucursal?.id_sucursal, 
@@ -176,7 +165,7 @@ export class UsuarioService {
         const savedUser = await this.usuarioRepo.save(newUser);
 
         //Retornar el nuevo usuario sin exponer la contraseña
-        const { contraseña, ...result } = savedUser;
+        const { password, ...result } = savedUser;
         return result;
     }
 
@@ -339,7 +328,7 @@ export class UsuarioService {
 
         //Guardar los cambios en la base de datos
         await this.usuarioRepo.save(targetUser);
-        const { contraseña, ...result } = targetUser;
+        const { password, ...result } = targetUser;
         return { message: `Usuario ${targetUser.nombre} reasignado exitosamente`,
                  user: result
         };

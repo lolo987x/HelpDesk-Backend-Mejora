@@ -28,9 +28,8 @@ export class UpdateProfileDTO {
     @IsOptional()
     telefono?: string;
 
-    //Opcional: Nueva contraseña del usuario (con validacion de longitud minima)
     @IsOptional()
     @IsString()
     @MinLength(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres' })
-    nuevaContraseña?: string;
+    nuevaPassword?: string;
 }
