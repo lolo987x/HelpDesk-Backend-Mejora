@@ -39,7 +39,7 @@ export class SucursalService {
         // 5. Limpiar Usuarios 🚨 (CRÍTICO: Remover contraseña)
         if (sucursal.usuarios) {
             sucursalLimpia.usuarios = sucursal.usuarios.map(usuario => {
-                const { contraseña, created_at, updated_at, ...usuarioLimpio } = usuario;
+                const { password, created_at, updated_at, ...usuarioLimpio } = usuario;
                 return usuarioLimpio;
             }) as any;
         }

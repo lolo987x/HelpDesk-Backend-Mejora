@@ -39,11 +39,11 @@ export class UsuarioService {
         const user = await this.validateUserExists(userId);
 
         //Validar contraseña actual
-        const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.contraseña);
+        const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
         if (!isPasswordValid) throw new UnauthorizedException('Contraseña actual incorrecta');
 
         //Si se proporciona nueva contraseña, encriptarla
-        if (dto.nuevaContraseña) user.contraseña = await bcrypt.hash(dto.nuevaContraseña, 10);
+        if (dto.nuevaPassword) user.password = await bcrypt.hash(dto.nuevaPassword, 10);
 
         //Actualizar campos opcionales
         if (dto.nombre) user.nombre = dto.nombre;
@@ -57,9 +57,9 @@ export class UsuarioService {
         await this.usuarioRepo.save(user);
 
         //Retornamos el usuario sin la contraseña por seguridad
-        const { contraseña, ...result } = user;
+        const { password, ...result } = user;
         //Si se actualizo la contraseña, indicarlo en el mensaje de respuesta
-        if (dto.nuevaContraseña) {
+        if (dto.nuevaPassword) {
             return {
                 message: 'Perfil y contraseña actualizados exitosamente',
                 resultado: result,
@@ -79,7 +79,7 @@ export class UsuarioService {
         const user = await this.usuarioRepo.findOne({ where: { id_usuario: userId }, relations: ['rol'] });
         if (!user) throw new NotFoundException('Usuario no encontrado');
         //Retornamos el usuario sin la contraseña por seguridad
-        const { contraseña, ...result } = user;
+        const { password, ...result } = user;
         return result;
     }
 
@@ -99,7 +99,7 @@ export class UsuarioService {
         }
         const users = await query.getMany();
         return users.map((user) => {
-            const { contraseña, ...result } = user;
+        const { password, ...result } = user;
             return result;
         });
     }
@@ -142,7 +142,7 @@ export class UsuarioService {
         }
 
         //Encriptar contraseña
-        const hashedPassword = await bcrypt.hash(dto.contraseña, 10);
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
 
         // Construir el objeto con tipado explicito Partial<Usuario> para evitar
         const userData: Partial<Usuario> = {
@@ -150,7 +150,7 @@ export class UsuarioService {
             apellido: dto.apellido,
             correo: dto.correo,
             telefono: dto.telefono,
-            contraseña: hashedPassword,
+            password: hashedPassword,
             rol: rol,
             id_cliente: cliente?.id_cliente ,   
             id_sucursal: sucursal?.id_sucursal, 
@@ -162,7 +162,7 @@ export class UsuarioService {
         const savedUser = await this.usuarioRepo.save(newUser);
 
         //Retornar el nuevo usuario sin exponer la contraseña
-        const { contraseña, ...result } = savedUser;
+        const { password, ...result } = savedUser;
         return result;
     }
 
@@ -325,7 +325,7 @@ export class UsuarioService {
 
         //Guardar los cambios en la base de datos
         await this.usuarioRepo.save(targetUser);
-        const { contraseña, ...result } = targetUser;
+        const { password, ...result } = targetUser;
         return { message: `Usuario ${targetUser.nombre} reasignado exitosamente`,
                  user: result
         };

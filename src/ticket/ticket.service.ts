@@ -30,12 +30,12 @@ export class TicketService {
 
     // Limpiamos datos sensibles del técnico de soporte
     if (ticketLimpio.soporte) {
-        const { contraseña, created_at, updated_at, ...soporteLimpio } = ticketLimpio.soporte;
+        const { password, created_at, updated_at, ...soporteLimpio } = ticketLimpio.soporte;
         ticketLimpio.soporte = soporteLimpio as any;
     }
     // Limpiamos datos del trabajador
     if (ticketLimpio.trabajador) {
-        const { contraseña, created_at, updated_at, ...trabajadorLimpio } = ticketLimpio.trabajador;
+        const { password, created_at, updated_at, ...trabajadorLimpio } = ticketLimpio.trabajador;
         ticketLimpio.trabajador = trabajadorLimpio as any;
     }
     return ticketLimpio;
@@ -100,9 +100,9 @@ async createTicket(dto: CreateTicketDto, user: any) {
   //------------------------------------
   //Metodo para listar los tickets con filtros opcionales y control por rol
   //ROl ENCARGADO: TODOS (con diferentes niveles de acceso)
-  //API: GET /tickets
+  //API: GET /tickets?vista=mis-tickets | GET /tickets?vista=abiertos
   //------------------------------------
-async findTickets(user: any, filters: any) {
+ async findTickets(user: any, filters: any) {
     const query = this.ticketRepo
       .createQueryBuilder('ticket')
       .leftJoinAndSelect('ticket.soporte', 'soporte')
@@ -113,7 +113,6 @@ async findTickets(user: any, filters: any) {
     if(filters.estado) query.andWhere('ticket.estado = :estado', { estado: filters.estado });
     if(filters.pin) query.andWhere('ticket.pin = :pin', { pin: filters.pin });
     if(filters.soporte) query.andWhere('soporte.nombre LIKE :soporte', { soporte: `%${filters.soporte}%` });
-
     if(filters.fecha_creacion) {
       const fecha = new Date(filters.fecha_creacion);
       const nextDay = new Date(fecha);
@@ -123,23 +122,47 @@ async findTickets(user: any, filters: any) {
 
     switch (user.role) {
       case 'CLIENTE_TRABAJADOR':
-        query.andWhere('ticket.id_trabajador = :id', { id: user.userId })
-             .andWhere('ticket.id_cliente = :clienteId', { clienteId: user.clienteId });
+        if (filters.vista === 'mis-tickets') {
+          query.andWhere('ticket.id_trabajador = :id', { id: user.userId })
+               .andWhere('ticket.id_cliente = :clienteId', { clienteId: user.clienteId });
+        } else {
+          query.andWhere('ticket.id_trabajador = :id', { id: user.userId })
+               .andWhere('ticket.id_cliente = :clienteId', { clienteId: user.clienteId });
+        }
         break;
       case 'CLIENTE_SUCURSAL':
-        // El jefe de sucursal ve los tickets de su sucursal específica
-        query.andWhere('equipo.id_sucursal = :sucursalId', { sucursalId: user.sucursalId });
+        if (filters.vista === 'mis-tickets') {
+          query.andWhere('equipo.id_sucursal = :sucursalId', { sucursalId: user.sucursalId });
+        } else {
+          query.andWhere('equipo.id_sucursal = :sucursalId', { sucursalId: user.sucursalId });
+        }
         break;
       case 'CLIENTE_EMPRESA':
-        query.andWhere('ticket.id_cliente = :clienteId', { clienteId: user.clienteId });
+        if (filters.vista === 'mis-tickets') {
+          query.andWhere('ticket.id_cliente = :clienteId', { clienteId: user.clienteId });
+        }
         break;
       case 'SOPORTE_TECNICO':
-      case 'SOPORTE_INSITU': // <-- CORREGIDO
-        query.andWhere('(ticket.id_soporte = :id OR ticket.estado = :estadoPendiente)', { 
-            id: user.userId, 
-            estadoPendiente: TicketStatus.PENDIENTE 
-        });
+      case 'SOPORTE_INSITU':
+        if (filters.vista === 'mis-tickets') {
+          query.andWhere('ticket.id_soporte = :id', { id: user.userId });
+        } else {
+          query.andWhere('(ticket.id_soporte = :id OR ticket.estado = :estadoPendiente)', { 
+              id: user.userId, 
+              estadoPendiente: TicketStatus.PENDIENTE 
+          });
+        }
         break;
+      default:
+        if (filters.vista === 'mis-tickets') {
+            break;
+        }
+    }
+    
+    if (filters.vista === 'abiertos') {
+      query.andWhere('ticket.estado IN (:...estados)', {
+        estados: [TicketStatus.PENDIENTE, TicketStatus.ASIGNADO, TicketStatus.EN_PROGRESO, TicketStatus.REABIERTO],
+      });
     }
     
     const tickets = await query.getMany();

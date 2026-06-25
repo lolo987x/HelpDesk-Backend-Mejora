@@ -45,14 +45,14 @@ export class AuthService {
         if (!defaultRole) throw new HttpException('Rol por defecto no encontrado', HttpStatus.CONFLICT);
 
         // 2. Encriptar contraseña
-        const hashedPassword = await bcrypt.hash(dto.contraseña, 10);
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
 
         // 3. Crear usuario
         const newUser = this.usuariosRepo.create({
             nombre: dto.nombre,
             apellido: dto.apellido,
             correo: dto.correo,
-            contraseña: hashedPassword,
+            password: hashedPassword,
             telefono: dto.telefono,
             rol: defaultRole,
             is_active: true,
@@ -61,31 +61,23 @@ export class AuthService {
         return await this.usuariosRepo.save(newUser);
     }
 
-    //Metodo para el LOGIN DE USUARIO
     async login(dto: LoginDTO) {
         const user = await this.usuariosRepo.findOne({
             where: { correo: dto.correo },
-            relations: ['rol'], // Asegura que el rol se cargue junto con el usuario
+            relations: ['rol'],
         });
 
-        //En caso de que no exista el usuario
         if (!user || !user.is_active) throw new UnauthorizedException('Correo incorrecto');
 
-        //Verificar contraseña
-        const isPasswordValid = await bcrypt.compare(
-            dto.contraseña,      
-            user.contraseña, 
-        );
+        const isPasswordValid = await bcrypt.compare(dto.password, user.password);
 
-        if (!isPasswordValid) {
-            throw new UnauthorizedException('Contraseña incorrecta');
-        }
+        if (!isPasswordValid) throw new UnauthorizedException('Contraseña incorrecta');
 
         const payload = {
             sub: user.id_usuario,
             role: user.rol.nombre,
             clienteId: user.id_cliente,
-            sucursalId: user.id_sucursal
+            sucursalId: user.id_sucursal,
         };
 
         const token = this.jwtService.sign(payload);
@@ -138,7 +130,7 @@ export class AuthService {
 
             const hashPassword = await bcrypt.hash(nuevaContraseña, 10);
 
-            await this.usuariosRepo.update({ id_usuario: payload.sub }, { contraseña: hashPassword });
+            await this.usuariosRepo.update({ id_usuario: payload.sub }, { password: hashPassword });
 
             return { message: 'Contraseña restablecida exitosamente' };
         } catch (error) {

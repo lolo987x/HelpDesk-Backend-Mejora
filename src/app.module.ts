@@ -12,6 +12,7 @@ import { ChatModule } from './chat/chat.module';
 import { UsuarioModule } from './usuario/usuario.module';
 import { PlanesModule } from './planes/planes.module';
 import { SoftwareModule } from './software/software.module';
+import { DashboardsModule } from './dashboards/dashboards.module';
 import { FilesController } from './files/files.controller';
 import { ServeStaticModule } from '@nestjs/serve-static'; //Importa el módulo para servir archivos estáticos 
 import { join } from 'path';
@@ -26,12 +27,13 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
       AuthModule, 
       HardwareModule, 
       TicketModule,
-      SoftwareModule, 
-      EquiposModule, 
-      ChatModule, 
-      UsuarioModule, 
-      PlanesModule,
-      ServeStaticModule.forRoot({
+       SoftwareModule, 
+       EquiposModule, 
+       ChatModule, 
+       UsuarioModule, 
+       PlanesModule,
+       DashboardsModule,
+       ServeStaticModule.forRoot({
         rootPath: join(__dirname, '..', 'uploads'), // Carpeta donde se almacenan los archivos subidos
         serveRoot: '/uploads', // Ruta base para acceder a los archivos (ejemplo: http://localhost:3000/uploads/archivo.jpg)
       }),
