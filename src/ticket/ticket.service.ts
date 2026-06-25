@@ -14,6 +14,7 @@ import { Tickets, TicketStatus } from '../entities/Tickets.entity'; //Entidad de
 import { Repository } from 'typeorm'; //Repositorio de TypeORM para manejar las operaciones de base de datos
 import { InjectRepository } from '@nestjs/typeorm'; //Para inyectar el repositorio de Ticket
 import { Equipos } from 'src/entities/Equipos.entity';
+import { Usuario } from 'src/entities/Usuario.entity';
 
 //Servicio de Ticket
 @Injectable()
@@ -23,6 +24,8 @@ export class TicketService {
     private readonly ticketRepo: Repository<Tickets>,
     @InjectRepository(Equipos) // <-- INYECTAMOS EQUIPOS PARA VALIDAR PROPIEDAD
     private readonly equiposRepo: Repository<Equipos>,
+    @InjectRepository(Usuario)
+    private readonly usuariosRepo: Repository<Usuario>,
   ){}
 
   private cleanTicketResponse(ticket: Tickets) {
@@ -164,7 +167,7 @@ async findTickets(user: any, filters: any) {
   async getTicketById(id: number, user: any){
     const ticket = await this.ticketRepo.findOne({
       where: { id_ticket: id },
-      relations: ['equipo', 'cliente', 'soporte', 'trabajador'], // Agregamos trabajador para saber quién lo creó
+      relations: { equipo: true, cliente: true, soporte: true, trabajador: true }, // Agregamos trabajador para saber quién lo creó
     });
     if (!ticket) throw new NotFoundException(`Ticket con ID ${id} no encontrado`);
 
@@ -196,6 +199,44 @@ async findTickets(user: any, filters: any) {
     return await this.ticketRepo.save(ticket);
   }
 
+  //--------------------------------------------
+  //Metodo para transferir un ticket a otro soporte (ej: remoto -> insitu)
+  //Rol encargado: Soporte Tecnico o Soporte Insitu (solo si el ticket está asignado a el)
+  //API: PATCH /tickets/:id/transferir
+  //--------------------------------------------
+  async transferTicket(ticketId: number, nuevoSoporteId: number, observaciones: string, user: any) {
+    const ticket = await this.ticketRepo.findOne({ where: { id_ticket: ticketId } });
+    if (!ticket) throw new NotFoundException('Ticket no encontrado');
+
+    // Solo el soporte que ya tiene el ticket asignado puede transferirlo
+    if (ticket.id_soporte !== user.userId) {
+      throw new ForbiddenException('Solo puedes transferir tickets asignados a ti');
+    }
+
+    // Validar que el nuevo soporte exista y tenga un rol válido
+    const nuevoSoporte = await this.usuariosRepo.findOne({
+      where: { id_usuario: nuevoSoporteId },
+      relations: { rol: true },
+    });
+
+    if (!nuevoSoporte) throw new NotFoundException('El técnico al que intentas transferir no existe');
+
+    if (!['SOPORTE_TECNICO', 'SOPORTE_INSITU'].includes(nuevoSoporte.rol.nombre)) {
+      throw new BadRequestException('Solo puedes transferir tickets a personal de soporte (técnico o insitu)');
+    }
+
+    // No permitir transferirse el ticket a uno mismo
+    if (nuevoSoporteId === user.userId) {
+      throw new BadRequestException('No puedes transferir el ticket a ti mismo');
+    }
+
+    ticket.id_soporte = nuevoSoporteId;
+    // El ticket vuelve a quedar "Asignado" para que el nuevo soporte lo inicie cuando esté listo
+    ticket.estado = TicketStatus.ASIGNADO;
+
+    return await this.ticketRepo.save(ticket);
+  }
+  
   //--------------------------------------------
   //Metodo para iniciar el proceso de resolver un ticket (cambiar estado a En Progreso)
   //Rol encargado: Soporte Tecnico (solo puede iniciar el proceso si el ticket esta asignado a el)

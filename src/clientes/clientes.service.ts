@@ -164,7 +164,7 @@ export class ClientesService {
     //Listar todas las empresas
     async findAll() {
         return await this.clientesRepo.find({
-            relations: ['sucursales', 'plan'],
+            relations: { sucursales: true, plan: true },
         });
     }
 
@@ -172,7 +172,7 @@ export class ClientesService {
     async findOne(id: number) {
         const cliente = await this.clientesRepo.findOne({
             where: { id_cliente: id },
-            relations: ['sucursales', 'equipos', 'plan'],
+            relations: { sucursales: true, equipos: true, plan: true },
         });
 
         if (!cliente) throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
@@ -205,7 +205,7 @@ export class ClientesService {
 
         const sucursales = await this.sucursalesRepo.find({
             where: { id_cliente: id },
-            select: ['id_sucursal']
+            select: { id_sucursal: true }
         });
 
         if(sucursales.length > 0) {
@@ -233,7 +233,7 @@ export class ClientesService {
 
         const sucursales = await this.sucursalesRepo.find({
             where: { id_cliente: id },
-            select: ['id_sucursal']
+            select: { id_sucursal: true }
         });
 
         if(sucursales.length > 0) {
@@ -273,7 +273,7 @@ export class ClientesService {
             cliente.is_active = true; 
             const sucursales = await this.sucursalesRepo.find({
                 where: { id_cliente: id },
-                select: ['id_sucursal']
+                select: { id_sucursal: true }
             });
 
             if(sucursales.length > 0) {

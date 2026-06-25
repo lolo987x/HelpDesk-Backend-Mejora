@@ -78,7 +78,7 @@ export class UsuarioService {
     //Metodo para obtener el perfil del usuario
     //GET /usuario
     async getProfile(userId: number) {
-        const user = await this.usuarioRepo.findOne({ where: { id_usuario: userId }, relations: ['rol'] });
+        const user = await this.usuarioRepo.findOne({ where: { id_usuario: userId }, relations: { rol: true } });
         if (!user) throw new NotFoundException('Usuario no encontrado');
         //Retornamos el usuario sin la contraseña por seguridad
         const { contraseña, ...result } = user;
@@ -189,7 +189,7 @@ export class UsuarioService {
         const { role, clienteId } = userPayload;
         const targetUser = await this.usuarioRepo.findOne({ 
             where: { id_usuario: targetUserId },
-            relations: ['rol']
+            relations: { rol: true }
         });
         if (!targetUser) throw new NotFoundException('Usuario no encontrado');
 
@@ -222,7 +222,7 @@ export class UsuarioService {
 
         const targetUser = await this.usuarioRepo.findOne({ 
             where: { id_usuario: targetUserId },
-            relations: ['rol']
+            relations: { rol: true }
         });
         if (!targetUser) throw new NotFoundException('Usuario no encontrado');
 
@@ -259,7 +259,7 @@ export class UsuarioService {
 
         const targetUser = await this.usuarioRepo.findOne({ 
             where: { id_usuario: targetUserId },
-            relations: ['rol']
+            relations: { rol: true }
         });
         if (!targetUser) throw new NotFoundException('Usuario no encontrado');
 
@@ -288,7 +288,7 @@ export class UsuarioService {
         const { role, clienteId } = userPayload;
         const targetUser = await this.usuarioRepo.findOne({ 
             where: { id_usuario: userId },
-            relations: ['rol'] 
+            relations: { rol: true }
         });
         if (!targetUser) throw new NotFoundException('Usuario no encontrado');
     

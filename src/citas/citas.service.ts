@@ -54,7 +54,7 @@ export class CitasService {
   async findOne(id: number, user: any) {
     const cita = await this.citaRepo.findOne({
       where: { id_cita: id },
-      relations: ['cliente', 'sucursal', 'tecnico', 'equipo'],
+      relations: { cliente: true, sucursal: true, tecnico: true, equipo: true },
     });
     if (!cita) throw new NotFoundException('Cita no encontrada');
 

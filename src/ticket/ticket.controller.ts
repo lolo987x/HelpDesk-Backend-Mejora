@@ -80,6 +80,21 @@ export class TicketController {
   }
 
   //------------------------------------------
+  // TRANSFERIR TICKET A OTRO SOPORTE (remoto -> insitu o viceversa)
+  // PATCH /tickets/:id/transferir
+  //------------------------------------------
+  @Patch(':id/transferir')
+  @Roles('SOPORTE_TECNICO', 'SOPORTE_INSITU')
+  transfer(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('nuevoSoporteId', ParseIntPipe) nuevoSoporteId: number,
+    @Body('observaciones') observaciones: string,
+    @Req() req: any,
+  ) {
+    return this.ticketService.transferTicket(id, nuevoSoporteId, observaciones, req.user);
+  }
+  
+  //------------------------------------------
   // INICIAR PROGRESO
   // PATCH /tickets/:id/iniciar
   //------------------------------------------

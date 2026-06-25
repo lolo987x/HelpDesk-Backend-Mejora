@@ -64,7 +64,7 @@ export class SucursalService {
     //Listar todas las sucursales de todas las empresas
     async findAll() {
         const sucursales = await this.sucursalRepo.find({
-            relations: ['cliente', 'areas'],
+            relations: { cliente: true, areas: true },
         });
         return sucursales.map(sucursal => this.cleanResponse(sucursal));
     }
@@ -73,7 +73,7 @@ export class SucursalService {
     async findOne(id: number) {
         const sucursal = await this.sucursalRepo.findOne({
             where: { id_sucursal: id },
-            relations: ['cliente', 'areas', 'equipos', 'usuarios'],
+            relations: { cliente: true, areas: true, equipos: true, usuarios: true },
         });
         if (!sucursal) throw new NotFoundException(`Sucursal con ID ${id} no encontrada`);
         
@@ -86,7 +86,7 @@ export class SucursalService {
         const cliente = await this.clientExists(id_cliente);
         const sucursales = await this.sucursalRepo.find({
             where: { id_cliente: id_cliente },
-            relations: ['areas'],
+            relations: { areas: true },
         });
         return sucursales.map(sucursal => this.cleanResponse(sucursal));
     }

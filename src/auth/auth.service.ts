@@ -40,7 +40,7 @@ export class AuthService {
         }
 
         //1. Buscar si el rol existe (Por defecto asignamos rol ID 1 o buscamos por nombre 'Usuario')
-        const defaultRole = await this.rolRepo.findOne({ where: { nombre: 'ADMINISTRADOR' } }); 
+        const defaultRole = await this.rolRepo.findOne({ where: { nombre: 'CLIENTE_TRABAJADOR' } });
         
         if (!defaultRole) throw new HttpException('Rol por defecto no encontrado', HttpStatus.CONFLICT);
 
@@ -65,7 +65,7 @@ export class AuthService {
     async login(dto: LoginDTO) {
         const user = await this.usuariosRepo.findOne({
             where: { correo: dto.correo },
-            relations: ['rol'], // Asegura que el rol se cargue junto con el usuario
+            relations: { rol: true }, // Asegura que el rol se cargue junto con el usuario
         });
 
         //En caso de que no exista el usuario

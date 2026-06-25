@@ -42,7 +42,7 @@ export class HardwareService {
   async findOne(id: number) {
     const hardware = await this.hardwareRepo.findOne({ 
             where: { id_hardware: id },
-            relations: ['registros', 'registros.equipo'] // Trae el historial y el nombre de la PC
+            relations: { registros: { equipo: true } } // Trae el historial y el nombre de la PC
         });
 
       if (!hardware) throw new NotFoundException(`Hardware con id ${id} no encontrado`);

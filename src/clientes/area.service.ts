@@ -56,7 +56,7 @@ export class AreaService {
     //Listar todas las areas de todas las sucursales
     async findAll() {
         const areas = await this.areaRepo.find({
-            relations: ['sucursal'],
+            relations: { sucursal: true },
         });
         return areas.map(area => this.cleanResponse(area));
     }
@@ -76,7 +76,7 @@ export class AreaService {
     async findOne(id: number) {
         const area = await this.areaRepo.findOne({
             where: { id_area: id },
-            relations: ['sucursal', 'sucursal.cliente'],
+            relations: { sucursal: { cliente: true } },
         });
         if (!area) throw new NotFoundException(`Area con ID ${id} no encontrada`);
         

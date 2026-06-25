@@ -54,7 +54,7 @@ export class SoftwareService {
   async findOne(id: number) {
     const software = await this.softwareRepo.findOne({
         where: { id_software: id },
-        relations: ['se', 'se.equipo'] 
+        relations: { se: { equipo: true } }
     });
 
     if (!software) throw new NotFoundException(`Software con id ${id} no encontrado`);
